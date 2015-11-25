@@ -31,6 +31,7 @@ import ch.epfl.data.squall.operators.DistinctOperator;
 import ch.epfl.data.squall.operators.Operator;
 import ch.epfl.data.squall.operators.PrintOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
+import ch.epfl.data.squall.operators.ZKMOperator;
 import ch.epfl.data.squall.operators.SampleOperator;
 import ch.epfl.data.squall.operators.SelectOperator;
 import ch.epfl.data.squall.operators.StoreOperator;
@@ -117,6 +118,11 @@ public class VECollectVisitor implements OperatorVisitor {
     @Override
     public void visit(ProjectOperator projection) {
 	// ignored because of topDown - makes no harm
+    }
+
+    @Override
+    public void visit(ZKMOperator zkm) {
+	// nothing to visit or add
     }
 
     @Override

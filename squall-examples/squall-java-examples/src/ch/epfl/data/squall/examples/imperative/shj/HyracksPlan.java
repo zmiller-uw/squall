@@ -28,6 +28,7 @@ import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
 import ch.epfl.data.squall.operators.ApproximateCountOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
+import ch.epfl.data.squall.operators.ZKMOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
@@ -42,7 +43,7 @@ public class HyracksPlan extends QueryPlan {
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
         // -------------------------------------------------------------------------------------
         Component customer = new DataSourceComponent("customer", conf)
-                .add(new ProjectOperator(0, 6));
+                .add(new ZKMOperator(0, 6));
 
         // -------------------------------------------------------------------------------------
         Component orders = new DataSourceComponent("orders", conf)
