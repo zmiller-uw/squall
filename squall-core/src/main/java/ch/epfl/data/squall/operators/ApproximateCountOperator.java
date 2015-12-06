@@ -62,7 +62,10 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
     private int _windowRangeSecs = -1;
     private int _slideRangeSecs = -1;
 
-    public ApproximateCountOperator(Map map) {
+    private int _field = -1;
+
+    public ApproximateCountOperator(int field, Map map) {
+	_field = field;
 	_map = map;
 	_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
     }
@@ -86,6 +89,7 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
     // is the same as DIP_GLOBAL_ADD_DELIMITER
     @Override
     public List<String> getContent() {
+	System.out.println("ZKM: getContent()");
 	final String str = _storage.getContent();
 	return str == null ? null : Arrays.asList(str.split("\\r?\\n"));
     }
@@ -130,6 +134,7 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
 
     @Override
     public BasicStore getStorage() {
+	System.out.println("ZKM: getStorage()");
 	return _storage;
     }
 
@@ -150,15 +155,24 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
 
     @Override
     public String printContent() {
+	System.out.println("ZKM: printContent()");
 	return _storage.getContent();
     }
 
     // from Operator
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
-    	_numTuplesProcessed++;
-    	System.out.println("[ApproximateCountOperator.processOne] _numTuplesProcessed=" + _numTuplesProcessed + ", tuple=" + tuple);
-    	
+	_numTuplesProcessed++;
+	System.out.println("ZKM: ApproxCount.processOne " + _numTuplesProcessed + " " + tuple);
+
+	// extract the field and add it to the sketch.
+
+	// I need list item _field from tuple.
+	String tmp_bs = tuple.get(_field);
+	int tmp_int = tmp_bs.hashCode();
+
+	AddToSketch(tmp_int);
+
 	if (_distinct != null) {
 	    tuple = _distinct.processOne(tuple, lineageTimestamp);
 	    if (tuple == null)
@@ -171,7 +185,8 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
 	else
 	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
 		    _map);
-	final Long value = _storage.update(tuple, tupleHash);
+
+	final Long value = GetSketchMin( tmp_int );
 	final String strValue = _wrapper.toString(value);
 
 	// propagate further the affected tupleHash-tupleValue pair
@@ -179,17 +194,20 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
 	affectedTuple.add(tupleHash);
 	affectedTuple.add(strValue);
 
+	System.out.println("ZKM: AppoxCount result " + affectedTuple);
 	return affectedTuple;
     }
 
     // actual operator implementation
     @Override
     public Long runAggregateFunction(Long value, List<String> tuple) {
+	System.out.println("ZKM: ApproxCount AGG1 " + value + " " + tuple);
 	return value + 1;
     }
 
     @Override
     public Long runAggregateFunction(Long value1, Long value2) {
+	System.out.println("ZKM: ApproxCount AGG2 " + value1 + " " + value2);
 	return value1 + value2;
     }
 
@@ -273,4 +291,81 @@ public class ApproximateCountOperator extends OneToOneOperator implements Aggreg
 	return res;
     }
 
+
+
+    public static int safeLongToInt(long l) {
+        if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException
+                (l + " cannot be cast to int without changing its value.");
+        }
+		int zz = (int) l;
+		if(zz > 0) {
+			return zz;
+		} else {
+			return -zz;
+		}
+    }
+
+    ////////////////////////////////
+    // Count-Min.
+    ////////////////////////////////
+    //
+    // These should of course all be initialized in the constructor, not
+    // hard-coded.  Prime numbers should be generated based on a seed.
+    // Also, the dimension needs to be variable (_y) and not "3" as it is
+    // currently implemented.
+
+    public int _x = 997;
+    public int _y = 3;
+
+    public long[] _P1 = {5915587277L, 1500450271L, 3267000013L};
+    public long[] _P2 = {5754853343L, 4093082899L, 9576890767L};
+    public long[] _P3 = {3628273133L, 2860486313L, 5463458053L};
+    public long[] _P4 = {13L,         17L,         19L        };
+
+    // Actual sketch grid
+    public long[][] _sketch = new long[_x][_y];
+
+    public boolean AddToSketch(long k) {
+
+        System.out.println("ADD SKETCH FOR " + k);
+
+        for (int y = 0; y < _y; y++) {
+            int x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
+
+            System.out.println("C[" + x + "][" + y + "] ... ");
+            System.out.println("C[" + x + "][" + y + "] was " + _sketch[x][y]);
+            _sketch[x][y]++;
+            System.out.println("C[" + x + "][" + y + "] now " + _sketch[x][y]);
+        }
+		return true;
+    }
+
+
+    public long GetSketchMin(long k) {
+
+        System.out.println("GET SKETCH FOR " + k);
+
+        //$y = 0;
+        int y = 0;
+        //$x = (($k * $P1[$y] + $P2[$y]) * $P3[$y] + $P4[$y]) % $WIDTH;
+        int x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
+        //$v = $C[$x][$y];
+        long v = _sketch[x][y];
+
+        //print "C[$x][$y] == $v\n";
+        System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
+
+        for (y = 1; y < 3; y++) {
+            //$x = (($k * $P1[$y] + $P2[$y]) * $P3[$y] + $P4[$y]) % $WIDTH;
+            x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
+            System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
+            if (_sketch[x][y] < v) {
+                v = _sketch[x][y];
+            }
+        }
+        return v;
+    }
+
 }
+

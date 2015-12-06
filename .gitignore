@@ -2,6 +2,9 @@
 *.class
 *.swp
 
+# Eclipse crud
+.classpath
+.project
 
 # Paths
 .idea
@@ -9,6 +12,7 @@ eclipse
 deploy
 storm-0*
 apache-storm-*
+zkm.build
 
 bin/extract_constants
 bin/old

@@ -28,27 +28,23 @@ import ch.epfl.data.squall.expressions.ValueExpression;
 import ch.epfl.data.squall.types.StringType;
 import ch.epfl.data.squall.visitors.OperatorVisitor;
 
-public class ZKMOperator extends OneToOneOperator implements Operator {
+public class SketchOperator extends OneToOneOperator implements Operator {
     private static final long serialVersionUID = 1L;
 
     private List<ValueExpression> _veList = new ArrayList<ValueExpression>();
 
-    private int _numTuplesProcessed = 0;
+	private int _numTuplesProcessed = 0;
+    public int _field = -1;
+    public int _x = -1;
+    public int _y = -1;
+    public int _s = -1;
 
-    public ZKMOperator(int... projectIndexes) {
-	for (final int columnNumber : projectIndexes) {
-	    final ColumnReference columnReference = new ColumnReference(
-		    new StringType(), columnNumber);
-	    _veList.add(columnReference);
-	}
-    }
-
-    public ZKMOperator(List<ValueExpression> veList) {
-	_veList = veList;
-    }
-
-    public ZKMOperator(ValueExpression... veArray) {
-	_veList.addAll(Arrays.asList(veArray));
+    public SketchOperator(int field, int y, int x, int s) {
+	System.out.println("ZKM: Instantiating SketchOperator " + field + " " + y + " " + x + " " + s);
+	_field = field;
+	_y = y;
+	_x = x;
+	_s = s;
     }
 
     @Override
@@ -59,7 +55,7 @@ public class ZKMOperator extends OneToOneOperator implements Operator {
     @Override
     public List<String> getContent() {
 	throw new RuntimeException(
-		"getContent for ZKMOperator should never be invoked!");
+		"getContent for SketchOperator should never be invoked!");
     }
 
     public List<ValueExpression> getExpressions() {
@@ -79,36 +75,19 @@ public class ZKMOperator extends OneToOneOperator implements Operator {
     @Override
     public String printContent() {
 	throw new RuntimeException(
-		"printContent for ZKMOperator should never be invoked!");
+		"printContent for SketchOperator should never be invoked!");
     }
 
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
-	_numTuplesProcessed++;
-	System.out.println("ZKM: processOne: ");
-	final List<String> projection = new ArrayList<String>();
-	for (final ValueExpression ve : _veList) {
-	    final String columnContent = ve.evalString(tuple);
-	    projection.add(columnContent);
-	    System.out.println(":" + columnContent);
-	}
-	System.out.println("\n");
-	return projection;
+	// break the tuple apart, sketch the column we're interested in
+	System.out.println("ZKM: sketching field " + _field + " of tuple " + tuple);
+	// change nothing
+	return tuple;
     }
 
     @Override
     public String toString() {
-	final StringBuilder sb = new StringBuilder();
-	sb.append("ZKMOperator ");
-	if (!_veList.isEmpty())
-	    sb.append("(");
-	for (int i = 0; i < _veList.size(); i++) {
-	    sb.append(_veList.get(i).toString());
-	    if (i == _veList.size() - 1)
-		sb.append(")");
-	    else
-		sb.append(", ");
-	}
-	return sb.toString();
+	return "ZKM_toString";
     }
 }

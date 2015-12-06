@@ -28,31 +28,37 @@ import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
 import ch.epfl.data.squall.operators.ApproximateCountOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
+import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
 
-public class HyracksPlan extends QueryPlan {
+public class SketchMinPlan extends QueryPlan {
 
-    public HyracksPlan(String dataPath, String extension, Map conf) {
+    public SketchMinPlan(String dataPath, String extension, Map conf) {
         super(dataPath, extension, conf);
     }
 
     @Override
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
-        // -------------------------------------------------------------------------------------
-        Component customer = new DataSourceComponent("customer", conf)
-                .add(new ProjectOperator(0, 6));
+
+		// column to sketch
+		// num hash functions
+		// width of sketch
+		// random seed
+        SketchOperator my_sketch = new SketchOperator(1,2,3,4);
 
         // -------------------------------------------------------------------------------------
         Component orders = new DataSourceComponent("orders", conf)
+				.add(my_sketch)
                 .add(new ProjectOperator(1));
 
-        // -------------------------------------------------------------------------------------
-        Component custOrders = new EquiJoinComponent(customer, 0, orders, 0)
-                .add(new AggregateCountOperator(conf).setGroupByColumns(1));
+     // -------------------------------------------------------------------------------------
+        Component custOrders = orders
+				.add(new ApproximateCountOperator(0, conf).setGroupByColumns(0));
 
         return custOrders;
         // -------------------------------------------------------------------------------------
     }
 }
+

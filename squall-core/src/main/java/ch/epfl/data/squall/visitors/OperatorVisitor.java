@@ -28,7 +28,7 @@ import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.operators.SampleOperator;
 import ch.epfl.data.squall.operators.SelectOperator;
 import ch.epfl.data.squall.operators.StoreOperator;
-import ch.epfl.data.squall.operators.ZKMOperator;
+import ch.epfl.data.squall.operators.SketchOperator;
 
 public interface OperatorVisitor {
 
@@ -42,7 +42,7 @@ public interface OperatorVisitor {
 
     public void visit(ProjectOperator projection);
 
-    public void visit(ZKMOperator zkm);
+    public void visit(SketchOperator sketch);
 
     public void visit(
 	    SampleAsideAndForwardOperator sampleAsideAndForwardOperator);
