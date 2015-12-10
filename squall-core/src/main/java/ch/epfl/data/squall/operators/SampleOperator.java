@@ -36,60 +36,68 @@ public class SampleOperator extends OneToOneOperator implements Operator {
     private Random _rnd = new Random();
 
     public SampleOperator(int relationSize, int numOfBuckets) {
-	_sampleRate = ((double) (numOfBuckets * SystemParameters.TUPLES_PER_BUCKET))
-		/ relationSize;
-	if (_sampleRate >= 1) {
-	    _sampleRate = 1;
-	}
-	LOG.info("Sample rate is " + _sampleRate);
+		_sampleRate = ((double) (numOfBuckets * SystemParameters.TUPLES_PER_BUCKET)) / relationSize;
+		if (_sampleRate >= 1) {
+	    	_sampleRate = 1;
+		}
+		LOG.info("NumOfBuckets: " + numOfBuckets);
+		LOG.info("TuplesPerBucket: " + SystemParameters.TUPLES_PER_BUCKET);
+		LOG.info("RelationSize: " + relationSize);
+		LOG.info("Sample rate is " + _sampleRate);
+    }
+	
+    public SampleOperator(double sampleRate) {
+		_sampleRate = sampleRate;
+		if (_sampleRate >= 1) {
+	    	_sampleRate = 1;
+		}
+		LOG.info("Sample rate is " + _sampleRate);
     }
 
     @Override
     public void accept(OperatorVisitor ov) {
-	ov.visit(this);
+		ov.visit(this);
     }
 
     @Override
     public List<String> getContent() {
-	throw new RuntimeException(
-		"getContent for SampleOperator should never be invoked!");
+		throw new RuntimeException("getContent for SampleOperator should never be invoked!");
     }
 
     @Override
     public int getNumTuplesProcessed() {
-	return _numTuplesProcessed;
+		return _numTuplesProcessed;
     }
 
     public double getSampleRate() {
-	return _sampleRate;
+		return _sampleRate;
     }
 
     @Override
     public boolean isBlocking() {
-	return false;
+		return false;
     }
 
     @Override
     public String printContent() {
-	throw new RuntimeException(
-		"printContent for SampleOperator should never be invoked!");
+		throw new RuntimeException("printContent for SampleOperator should never be invoked!");
     }
 
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
-	_numTuplesProcessed++;
-	if (_rnd.nextDouble() < _sampleRate) {
-	    return tuple;
-	} else {
-	    return null;
-	}
+		_numTuplesProcessed++;
+		if (_rnd.nextDouble() < _sampleRate) {
+	    	return tuple;
+		} else {
+	    	return null;
+		}
     }
 
     @Override
     public String toString() {
-	final StringBuilder sb = new StringBuilder();
-	sb.append("SampleOperator with Sample Rate: ");
-	sb.append(_sampleRate);
-	return sb.toString();
+		final StringBuilder sb = new StringBuilder();
+		sb.append("SampleOperator with Sample Rate: ");
+		sb.append(_sampleRate);
+		return sb.toString();
     }
 }
