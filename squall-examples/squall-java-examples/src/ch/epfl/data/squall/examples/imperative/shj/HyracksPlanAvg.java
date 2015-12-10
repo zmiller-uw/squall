@@ -28,9 +28,8 @@ import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateOperator;
 import ch.epfl.data.squall.operators.AggregateAvgOperator;
-import ch.epfl.data.squall.operators.ApproximateAvgOperator;
+import ch.epfl.data.squall.operators.ApproximateAvgSamplingOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
-import ch.epfl.data.squall.operators.ZKMOperator;
 import ch.epfl.data.squall.operators.SampleOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
@@ -51,7 +50,6 @@ public class HyracksPlanAvg extends QueryPlan {
         // -------------------------------------------------------------------------------------
         Component customer = new DataSourceComponent("customer", conf)
 				.add(new ProjectOperator(0, 5, 6));	
-                //.add(new ZKMOperator(0, 6));
 
         // -------------------------------------------------------------------------------------
         Component orders = new DataSourceComponent("orders", conf)
@@ -62,7 +60,7 @@ public class HyracksPlanAvg extends QueryPlan {
 	//				     new ColumnReference(_doubleConv, 1), conf)
 	//				     .setGroupByColumns(Arrays.asList(2));
 		
-	final AggregateOperator agg = new ApproximateAvgOperator(
+	final AggregateOperator agg = new ApproximateAvgSamplingOperator(
 					     new ColumnReference(_doubleConv, 1), conf, 15000)
 					     .setGroupByColumns(Arrays.asList(2));
 		

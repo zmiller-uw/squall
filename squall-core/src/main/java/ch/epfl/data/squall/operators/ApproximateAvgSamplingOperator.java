@@ -39,9 +39,9 @@ import ch.epfl.data.squall.utilities.MyUtilities;
 import ch.epfl.data.squall.visitors.OperatorVisitor;
 import ch.epfl.data.squall.window_semantics.WindowSemanticsManager;
 
-public class ApproximateAvgOperator extends OneToOneOperator implements AggregateOperator<SumCount> {
+public class ApproximateAvgSamplingOperator extends OneToOneOperator implements AggregateOperator<SumCount> {
     private static final long serialVersionUID = 1L;
-    private static Logger LOG = Logger.getLogger(ApproximateAvgOperator.class);
+    private static Logger LOG = Logger.getLogger(ApproximateAvgSamplingOperator.class);
 
     // the GroupBy type
     private static final int GB_UNSET = -1;
@@ -65,7 +65,7 @@ public class ApproximateAvgOperator extends OneToOneOperator implements Aggregat
     private int _windowRangeSecs = -1;
     private int _slideRangeSecs = -1;
 
-    public ApproximateAvgOperator(ValueExpression ve, Map map, int popSize) {
+    public ApproximateAvgSamplingOperator(ValueExpression ve, Map map, int popSize) {
 	_ve = ve;
 	_map = map;
 	_popSize = popSize;
@@ -89,7 +89,7 @@ public class ApproximateAvgOperator extends OneToOneOperator implements Aggregat
     @Override
     public List<String> getContent() {
 	throw new UnsupportedOperationException(
-		"getContent for ApproximateAvgOperator is not supported yet.");
+		"getContent for ApproximateAvgSamplingOperator is not supported yet.");
     }
 
     @Override
@@ -262,20 +262,20 @@ public class ApproximateAvgOperator extends OneToOneOperator implements Aggregat
     }
 
     @Override
-    public ApproximateAvgOperator setDistinct(DistinctOperator distinct) {
+    public ApproximateAvgSamplingOperator setDistinct(DistinctOperator distinct) {
 	_distinct = distinct;
 	return this;
     }
 
     @Override
-    public ApproximateAvgOperator setGroupByColumns(int... hashIndexes) {
+    public ApproximateAvgSamplingOperator setGroupByColumns(int... hashIndexes) {
 	return setGroupByColumns(Arrays
 		.asList(ArrayUtils.toObject(hashIndexes)));
     }
 
     // from AgregateOperator
     @Override
-    public ApproximateAvgOperator setGroupByColumns(List<Integer> groupByColumns) {
+    public ApproximateAvgSamplingOperator setGroupByColumns(List<Integer> groupByColumns) {
 	if (!alreadySetOther(GB_COLUMNS)) {
 	    _groupByType = GB_COLUMNS;
 	    _groupByColumns = groupByColumns;
@@ -286,7 +286,7 @@ public class ApproximateAvgOperator extends OneToOneOperator implements Aggregat
     }
 
     @Override
-    public ApproximateAvgOperator setGroupByProjection(
+    public ApproximateAvgSamplingOperator setGroupByProjection(
 	    ProjectOperator groupByProjection) {
 	if (!alreadySetOther(GB_PROJECTION)) {
 	    _groupByType = GB_PROJECTION;
@@ -300,7 +300,7 @@ public class ApproximateAvgOperator extends OneToOneOperator implements Aggregat
     @Override
     public String toString() {
 	final StringBuilder sb = new StringBuilder();
-	sb.append("ApproximateAvgOperator with VE: ");
+	sb.append("ApproximateAvgSamplingOperator with VE: ");
 	sb.append(_ve.toString());
 	if (_groupByColumns.isEmpty() && _groupByProjection == null)
 	    sb.append("\n  No groupBy!");
