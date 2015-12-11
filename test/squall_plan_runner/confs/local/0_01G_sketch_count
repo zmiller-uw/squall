@@ -1,6 +1,6 @@
 DIP_DISTRIBUTED false
 DIP_QUERY_NAME sketchmin
-DIP_QUERY_PLAN ch.epfl.data.squall.examples.imperative.shj.SketchMinPlan
+DIP_QUERY_PLAN ch.epfl.data.squall.examples.imperative.shj.SketchCountPlan
 DIP_TOPOLOGY_NAME_PREFIX username
 DIP_NUM_ACKERS 0
 

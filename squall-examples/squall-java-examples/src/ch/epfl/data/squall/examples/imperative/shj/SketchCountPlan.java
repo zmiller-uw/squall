@@ -26,16 +26,16 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
-import ch.epfl.data.squall.operators.ApproximateCountOperator;
+import ch.epfl.data.squall.operators.ApproximateCountSketchOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
 
-public class SketchMinPlan extends QueryPlan {
+public class SketchCountPlan extends QueryPlan {
 
-    public SketchMinPlan(String dataPath, String extension, Map conf) {
+    public SketchCountPlan(String dataPath, String extension, Map conf) {
         super(dataPath, extension, conf);
     }
 
@@ -46,16 +46,15 @@ public class SketchMinPlan extends QueryPlan {
 		// num hash functions
 		// width of sketch
 		// random seed
-        SketchOperator my_sketch = new SketchOperator(1,2,3,4);
+        // my_sketch = new ApproximateCountSketchOperator(1,2,3,4);
 
         // -------------------------------------------------------------------------------------
         Component orders = new DataSourceComponent("orders", conf)
-				.add(my_sketch)
                 .add(new ProjectOperator(1));
 
      // -------------------------------------------------------------------------------------
         Component custOrders = orders
-				.add(new ApproximateCountOperator(0, conf).setGroupByColumns(0));
+				.add(new ApproximateCountSketchOperator(0, conf).setGroupByColumns(0));
 
         return custOrders;
         // -------------------------------------------------------------------------------------
