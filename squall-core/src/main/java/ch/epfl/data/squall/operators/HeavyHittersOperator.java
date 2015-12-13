@@ -21,9 +21,16 @@ package ch.epfl.data.squall.operators;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -39,9 +46,9 @@ import ch.epfl.data.squall.utilities.MyUtilities;
 import ch.epfl.data.squall.visitors.OperatorVisitor;
 import ch.epfl.data.squall.window_semantics.WindowSemanticsManager;
 
-public class HeavyHittersCountOperator extends OneToOneOperator implements AggregateOperator<Long> {
+public class HeavyHittersOperator extends OneToOneOperator implements AggregateOperator<Long> {
     private static final long serialVersionUID = 1L;
-    private static Logger LOG = Logger.getLogger(HeavyHittersCountOperator.class);
+    private static Logger LOG = Logger.getLogger(HeavyHittersOperator.class);
 
     // the GroupBy type
     private static final int GB_UNSET = -1;
@@ -58,16 +65,18 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
     private BasicStore<Long> _storage;
 
     private final Map _map;
-    private Map<Integer, Integer> _heavyHittersMap = new HashMap<Integer, Integer>(); 
-
+    
+    private Map<Object, Integer> _heavyHittersMap = new HashMap<Object, Integer>(); 
+    private Random _random = new Random();
+    
     private boolean isWindowSemantics;
     private int _windowRangeSecs = -1;
     private int _slideRangeSecs = -1;
 
     private int _field;
 
-    public HeavyHittersCountOperator(int field, Map map) {
-		System.out.println("[HeavyHittersCountOperator] constructor called!");
+    public HeavyHittersOperator(int field, Map map) {
+		System.out.println("[HeavyHittersOperator] constructor called!");
     	_field = field;
 		_map = map;
 		_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
@@ -164,29 +173,44 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
     	
 		_numTuplesProcessed++;
-		System.out.println("[HeavyHittersCountOperator.processOne] _numTuplesProcessed=" + _numTuplesProcessed);
+		String tupleKey = tuple.get(0).toString();
+		List<String> heavyHitters = new ArrayList<String>();
 		
-		if (_distinct != null) {
-		    tuple = _distinct.processOne(tuple, lineageTimestamp);
-		    if (tuple == null)
-			return null;
+		// Check if this value already exists in the heavy hitters map
+		if(_heavyHittersMap.containsKey(tupleKey)) {
+			_heavyHittersMap.put(tupleKey, _heavyHittersMap.get(tupleKey) + 1);
+			//System.out.println("[HeavyHittersOperator.processOne] tuple exists! incrementing, _heavyHittersMap[" + tupleKey + "]=" + _heavyHittersMap.get(tupleKey));
+			return tuple;
 		}
-		String tupleHash;
-		if (_groupByType == GB_PROJECTION)
-		    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
-			    _groupByProjection.getExpressions(), _map);
-		else
-		    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
-			    _map);
-		final Long value = _storage.update(tuple, tupleHash);
-		final String strValue = _wrapper.toString(value);
+		
+		// If the item does not exist in the map, give it a 10% chance to be added
+		if(_random.nextInt(100) < 10) {
+			_heavyHittersMap.put(tupleKey, 0);
+			//System.out.println("[HeavyHittersOperator.processOne] passed 10% chance! _heavyHittersMap[" + tupleKey + "]=" + _heavyHittersMap.get(tupleKey));
+			return tuple;
+		}
+		
+		// Sort the list of heavy hitters
+		_heavyHittersMap = sortByComparator(_heavyHittersMap, false);
+		
 	
-		// propagate further the affected tupleHash-tupleValue pair
-		final List<String> affectedTuple = new ArrayList<String>();
-		affectedTuple.add(tupleHash);
-		affectedTuple.add(strValue);
-	
-		return affectedTuple;
+		Iterator it = _heavyHittersMap.entrySet().iterator();
+		int heavyHittersCount = 0;
+		while(it.hasNext() && heavyHittersCount < 5) {
+			Map.Entry pair = (Map.Entry)it.next();
+			heavyHitters.add(pair.getKey() + "=" + pair.getValue());
+			heavyHittersCount++;
+		}
+		
+		System.out.print("[HeavyHittersOperator.processOne] returning: [");
+		for(int i = 0; i < heavyHitters.size(); i ++) {
+			System.out.print(heavyHitters.get(i) + ",");
+		}
+		System.out.print("]\n");
+		
+		return heavyHitters;
+				
+		
     }
 
     // actual operator implementation
@@ -201,20 +225,20 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
     }
 
     @Override
-    public HeavyHittersCountOperator setDistinct(DistinctOperator distinct) {
+    public HeavyHittersOperator setDistinct(DistinctOperator distinct) {
 		_distinct = distinct;
 		return this;
     }
 
     @Override
-    public HeavyHittersCountOperator setGroupByColumns(int... hashIndexes) {
+    public HeavyHittersOperator setGroupByColumns(int... hashIndexes) {
     	return setGroupByColumns(Arrays
     			.asList(ArrayUtils.toObject(hashIndexes)));
     }
 
     // from AgregateOperator
     @Override
-    public HeavyHittersCountOperator setGroupByColumns(List<Integer> groupByColumns) {
+    public HeavyHittersOperator setGroupByColumns(List<Integer> groupByColumns) {
 		if (!alreadySetOther(GB_COLUMNS)) {
 		    _groupByType = GB_COLUMNS;
 		    _groupByColumns = groupByColumns;
@@ -225,7 +249,7 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
     }
 
     @Override
-    public HeavyHittersCountOperator setGroupByProjection(ProjectOperator groupByProjection) {
+    public HeavyHittersOperator setGroupByProjection(ProjectOperator groupByProjection) {
 		if (!alreadySetOther(GB_PROJECTION)) {
 		    _groupByType = GB_PROJECTION;
 		    _groupByProjection = groupByProjection;
@@ -238,7 +262,7 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
     @Override
     public String toString() {
 		final StringBuilder sb = new StringBuilder();
-		sb.append("HeavyHittersCountOperator ");
+		sb.append("HeavyHittersOperator ");
 		if (_groupByColumns.isEmpty() && _groupByProjection == null)
 		    sb.append("\n  No groupBy!");
 		else if (!_groupByColumns.isEmpty())
@@ -291,14 +315,40 @@ public class HeavyHittersCountOperator extends OneToOneOperator implements Aggre
 		}
     }
 
-    public boolean AddToMap(long k) {
+    /*
+	 * Sorts a Map structure.
+	 * Stolen from: http://stackoverflow.com/questions/8119366/sorting-hashmap-by-values
+	 */
+	private static Map<Object, Integer> sortByComparator(Map<Object, Integer> _heavyHittersMap2, final boolean order)
+    {
 
-		return true;
-    }
+        List<Entry<Object, Integer>> list = new LinkedList<Entry<Object, Integer>>(_heavyHittersMap2.entrySet());
 
+        // Sorting the list based on values
+        Collections.sort(list, new Comparator<Entry<Object, Integer>>()
+        {
+            public int compare(Entry<Object, Integer> o1,
+                    Entry<Object, Integer> o2)
+            {
+                if (order)
+                {
+                    return o1.getValue().compareTo(o2.getValue());
+                }
+                else
+                {
+                    return o2.getValue().compareTo(o1.getValue());
 
-    public long GetSketchMin(long k) {
+                }
+            }
+        });
 
-        return 0;
+        // Maintaining insertion order with the help of LinkedList
+        Map<Object, Integer> sortedMap = new LinkedHashMap<Object, Integer>();
+        for (Entry<Object, Integer> entry : list)
+        {
+            sortedMap.put(entry.getKey(), entry.getValue());
+        }
+
+        return sortedMap;
     }
 }

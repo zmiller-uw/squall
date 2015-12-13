@@ -25,7 +25,7 @@ import ch.epfl.data.squall.components.Component;
 import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
-import ch.epfl.data.squall.operators.HeavyHittersCountOperator;
+import ch.epfl.data.squall.operators.HeavyHittersOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
@@ -42,15 +42,14 @@ public class HeavyHittersPlan extends QueryPlan {
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
 
         // -------------------------------------------------------------------------------------
-        Component orders = new DataSourceComponent("orders", conf)
-                .add(new ProjectOperator(1));
+        Component orderClerks = new DataSourceComponent("orders", conf)
+                .add(new ProjectOperator(6));
 
      // -------------------------------------------------------------------------------------
-        Component custOrders = orders
-				.add(new HeavyHittersCountOperator(0, conf).setGroupByColumns(0));
-				//.add(new HeavyHittersAggregateOperator());
+        Component orderClerksHeavyHitters = orderClerks
+				.add(new HeavyHittersOperator(0, conf).setGroupByColumns(0));
 
-        return custOrders;
+        return orderClerksHeavyHitters;
         // -------------------------------------------------------------------------------------
     }
 }
