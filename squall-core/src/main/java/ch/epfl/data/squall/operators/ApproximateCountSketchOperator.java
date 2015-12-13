@@ -68,6 +68,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 	_field = field;
 	_map = map;
 	_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
+	System.out.println("ZKM: _map is " + map);
     }
 
     @Override
@@ -89,7 +90,9 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     // is the same as DIP_GLOBAL_ADD_DELIMITER
     @Override
     public List<String> getContent() {
+	System.out.println("ZKM: getContent()");
 	final String str = _storage.getContent();
+	System.out.println("ZKM: getContent str = " + str);
 	return str == null ? null : Arrays.asList(str.split("\\r?\\n"));
     }
 
@@ -133,6 +136,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 
     @Override
     public BasicStore getStorage() {
+	System.out.println("ZKM: getStorage()");
 	return _storage;
     }
 
@@ -159,6 +163,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     // from Operator
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
+	System.out.println("ZKM: processOne(" + tuple + ")");
 	_numTuplesProcessed++;
 	if (_distinct != null) {
 	    tuple = _distinct.processOne(tuple, lineageTimestamp);
@@ -172,6 +177,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 	else
 	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
 		    _map);
+
 	final Long value = _storage.update(tuple, tupleHash);
 	final String strValue = _wrapper.toString(value);
 
@@ -180,17 +186,25 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 	affectedTuple.add(tupleHash);
 	affectedTuple.add(strValue);
 
+	System.out.println("ZKM: affectedTuple == " + affectedTuple);
 	return affectedTuple;
     }
 
     // actual operator implementation
     @Override
     public Long runAggregateFunction(Long value, List<String> tuple) {
-	return value + 1;
+	System.out.println("ZKM: runAggregateFunction(" + value + " " + tuple + ")");
+        // I need list item _field from tuple.
+        String tmp_bs = tuple.get(_field);
+        long hash = tmp_bs.hashCode();
+
+	final Long v = UpdateSketch(hash, 1);
+	return v;
     }
 
     @Override
     public Long runAggregateFunction(Long value1, Long value2) {
+	System.out.println("ZKM: runAggregateFunction(" + value1 + " " + value2 + ")");
 	return value1 + value2;
     }
 
@@ -276,15 +290,15 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 
     public static int safeLongToInt(long l) {
         if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException
-                (l + " cannot be cast to int without changing its value.");
-        }
-		int zz = (int) l;
-		if(zz > 0) {
-			return zz;
-		} else {
-			return -zz;
-		}
+		throw new IllegalArgumentException
+			(l + " cannot be cast to int without changing its value.");
+	}
+	int zz = (int) l;
+	if(zz > 0) {
+		return zz;
+	} else {
+		return -zz;
+	}
     }
 
     ////////////////////////////////
@@ -308,7 +322,6 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     public long[][] _sketch = new long[_x][_y];
 
     public boolean AddToSketch(long k) {
-
         System.out.println("ADD SKETCH FOR " + k);
 
         for (int y = 0; y < _y; y++) {
@@ -324,21 +337,15 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 
 
     public long GetSketchMin(long k) {
-
         System.out.println("GET SKETCH FOR " + k);
 
-        //$y = 0;
         int y = 0;
-        //$x = (($k * $P1[$y] + $P2[$y]) * $P3[$y] + $P4[$y]) % $WIDTH;
         int x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
-        //$v = $C[$x][$y];
         long v = _sketch[x][y];
 
-        //print "C[$x][$y] == $v\n";
         System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
 
-        for (y = 1; y < 3; y++) {
-            //$x = (($k * $P1[$y] + $P2[$y]) * $P3[$y] + $P4[$y]) % $WIDTH;
+        for (y = 1; y < _y; y++) {
             x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
             System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
             if (_sketch[x][y] < v) {
@@ -347,4 +354,34 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
         }
         return v;
     }
+
+
+    public long UpdateSketch(long k, int delta) {
+        System.out.println("UPDATE SKETCH FOR " + k + " DELTA " + delta);
+
+        int y = 0;
+        int x = 0;
+        long min = -1;
+
+	// for each hash function
+        for (y = 0; y < _y; y++) {
+
+	    // find which column to update
+            x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
+
+	    // keep the previous value (just for printing) and update
+	    long prev = _sketch[x][y];
+            _sketch[x][y] = prev + delta;
+
+	    // debug information
+            System.out.println("C[" + x + "][" + y + "] was " + prev + " now " + _sketch[x][y]);
+
+	    // is the new value the minimum so far?
+            if ((min == -1) || (_sketch[x][y] < min)) {
+                min = _sketch[x][y];
+            }
+        }
+        return min;
+    }
+
 }

@@ -42,18 +42,13 @@ public class SketchCountPlan extends QueryPlan {
     @Override
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
 
-		// column to sketch
-		// num hash functions
-		// width of sketch
-		// random seed
-        // my_sketch = new ApproximateCountSketchOperator(1,2,3,4);
-
         // -------------------------------------------------------------------------------------
         Component orders = new DataSourceComponent("orders", conf)
                 .add(new ProjectOperator(1));
 
-     // -------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------
         Component custOrders = orders
+//				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
 				.add(new ApproximateCountSketchOperator(0, conf).setGroupByColumns(0));
 
         return custOrders;
