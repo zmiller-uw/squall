@@ -185,7 +185,8 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 		
 		// If the item does not exist in the map, give it a 10% chance to be added
 		if(_random.nextInt(100) < 10) {
-			_heavyHittersMap.put(tupleKey, 0);
+			//Enter into map with 1 hit
+			_heavyHittersMap.put(tupleKey, 1);
 			//System.out.println("[HeavyHittersOperator.processOne] passed 10% chance! _heavyHittersMap[" + tupleKey + "]=" + _heavyHittersMap.get(tupleKey));
 			return tuple;
 		}
