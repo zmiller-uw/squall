@@ -70,7 +70,7 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
     
     private Map<Object, Integer> _heavyHittersMap = new HashMap<Object, Integer>(); 
     private Random _random = new Random();
-    private float _samplePercent = 1;
+    private double _samplePercent = 1;
     
     private boolean isWindowSemantics;
     private int _windowRangeSecs = -1;
@@ -78,12 +78,12 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 
     private int _field;
 
-    public HeavyHittersOperator(int field, Map map, float samplePercent) {
-		System.out.println("[HeavyHittersOperator] constructor called!");
-    	_field = field;
+    public HeavyHittersOperator(int field, Map map, double samplePercent) {
+		_field = field;
 		_map = map;
 		_samplePercent = samplePercent;
 		_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
+		System.out.println("[HeavyHittersOperator] initializing with samplePercent=" + samplePercent);
     }
 
     @Override
@@ -187,13 +187,13 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 		
 		
 		// Assume the data we're reading is text from a tweet
-		// TO-DO: How do we generalize it? Or maybe we should specialize it for Twitter data.
+		// TO-DO: How do we generalize this? Or maybe we should specialize it for Twitter data.
 
 		// Extract useful words from the tweet
 		thisTweetText = tupleData.toLowerCase().replaceAll("(\\r|\\n|)", "");
 		tweetWords = thisTweetText.split(" ");
 		
-		System.out.print("[HeavyHittersOpeartor.processOne] _heavyHittersMap.size=" + _heavyHittersMap.size() + ", tweet text=\"" + thisTweetText + "\", clean words: ");
+		System.out.print("[HeavyHittersOpeartor.processOne] _numTuplesProcessed=" + _numTuplesProcessed + ", _heavyHittersMap.size=" + _heavyHittersMap.size() + ", tweet text=\"" + thisTweetText + "\", clean words: ");
 		
 		for(String thisWord : tweetWords) {
 			
@@ -205,19 +205,26 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 			// If the word checks out, maybe add it to the heavy hitters list
 			if(wordCleanMatcher.matches() && !stopWords.contains(cleanedWord)) {
 				cleanedWord = wordCleanMatcher.group(1).toString();
-				System.out.print(cleanedWord + ",");
-
+				
 				// Check if this value already exists in the heavy hitters map
 				if(_heavyHittersMap.containsKey(cleanedWord)) {
 					_heavyHittersMap.put(cleanedWord, _heavyHittersMap.get(cleanedWord) + 1);
-					//System.out.println("[HeavyHittersOperator.processOne] tuple exists! incrementing, _heavyHittersMap[" + tupleKey + "]=" + _heavyHittersMap.get(tupleKey));
+					//System.out.println("\t=> incrementing \"" + cleanedWord + "\", count=" + _heavyHittersMap.get(cleanedWord));
 				}
 				
-				// If the item does not exist in the map, give it a 10% chance to be added
-				else if(_random.nextFloat() < _samplePercent) {
+				// If the item does not exist in the map, give it some chance to be added
+				else if(_random.nextDouble() < _samplePercent) {
 					//Enter into map with 1 hit
 					_heavyHittersMap.put(cleanedWord, 1);
-					//System.out.println("[HeavyHittersOperator.processOne] passed 10% chance! _heavyHittersMap[" + tupleKey + "]=" + _heavyHittersMap.get(tupleKey));
+					//System.out.println("\t adding new word to map: \"" + cleanedWord + "\", count=" + _heavyHittersMap.get(cleanedWord));
+				}
+				
+				System.out.print(cleanedWord);
+				if(_heavyHittersMap.containsKey(cleanedWord)) {
+					System.out.print(" (" + _heavyHittersMap.get(cleanedWord) + "), ");
+				}
+				else {
+					System.out.print(" (0), ");
 				}
 			
 			}
@@ -230,7 +237,7 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 		// Sort the list of heavy hitters
 		_heavyHittersMap = sortByComparator(_heavyHittersMap, false);
 		
-	
+		// Determine the top 5 heavy hitters
 		Iterator it = _heavyHittersMap.entrySet().iterator();
 		int heavyHittersCount = 0;
 		while(it.hasNext() && heavyHittersCount < 5) {
@@ -239,7 +246,7 @@ public class HeavyHittersOperator extends OneToOneOperator implements AggregateO
 			heavyHittersCount++;
 		}
 		
-		System.out.print("\t=> returning: [");
+		System.out.print("\t=> RETURNING: [");
 		for(int i = 0; i < heavyHitters.size(); i ++) {
 			System.out.print(heavyHitters.get(i) + ",");
 		}

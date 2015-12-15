@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cd apache-storm-0.9.5
+java -classpath lib/*:../squall-core/target/squall-0.2.0.jar ch.epfl.data.squall.main.Main ../test/squall_plan_runner/confs/local/1M_heavy_hitters_sample-1 > mrc-test_1.out 2> mrc.err &
+java -classpath lib/*:../squall-core/target/squall-0.2.0.jar ch.epfl.data.squall.main.Main ../test/squall_plan_runner/confs/local/1M_heavy_hitters_sample-0_1 > mrc-test-0_1.out 2> mrc.err &
+java -classpath lib/*:../squall-core/target/squall-0.2.0.jar ch.epfl.data.squall.main.Main ../test/squall_plan_runner/confs/local/1M_heavy_hitters_sample-0_01 > mrc-test-0_01.out 2> mrc.err &
+java -classpath lib/*:../squall-core/target/squall-0.2.0.jar ch.epfl.data.squall.main.Main ../test/squall_plan_runner/confs/local/1M_heavy_hitters_sample-0_001 > mrc-test-0_001.out 2> mrc.err &
+

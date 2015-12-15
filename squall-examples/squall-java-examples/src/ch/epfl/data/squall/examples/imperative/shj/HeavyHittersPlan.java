@@ -19,7 +19,7 @@
 
 package ch.epfl.data.squall.examples.imperative.shj;
 
-import java.util.Map;
+import java.util.*;
 
 import ch.epfl.data.squall.components.Component;
 import ch.epfl.data.squall.components.DataSourceComponent;
@@ -40,6 +40,11 @@ public class HeavyHittersPlan extends QueryPlan {
 
     @Override
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
+    
+    	double samplePercent = 1;
+    	if(conf.containsKey("SAMPLE_PERCENT")) {
+    		samplePercent = Double.parseDouble(conf.get("SAMPLE_PERCENT").toString());
+    	}
 
         // -------------------------------------------------------------------------------------
         Component tweets = new DataSourceComponent("tweets", conf)
@@ -47,7 +52,7 @@ public class HeavyHittersPlan extends QueryPlan {
 
      	// -------------------------------------------------------------------------------------
         Component tweetsHeavyHitterKeywords = tweets
-				.add(new HeavyHittersOperator(0, conf, (float)0.1).setGroupByColumns(0));
+				.add(new HeavyHittersOperator(0, conf, samplePercent).setGroupByColumns(0));
 
         return tweetsHeavyHitterKeywords;
         // -------------------------------------------------------------------------------------
