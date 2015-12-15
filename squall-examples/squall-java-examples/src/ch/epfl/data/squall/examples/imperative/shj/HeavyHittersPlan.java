@@ -45,9 +45,9 @@ public class HeavyHittersPlan extends QueryPlan {
         Component tweets = new DataSourceComponent("tweets", conf)
                 .add(new ProjectOperator(1));
 
-     // -------------------------------------------------------------------------------------
+     	// -------------------------------------------------------------------------------------
         Component tweetsHeavyHitterKeywords = tweets
-				.add(new HeavyHittersOperator(0, conf).setGroupByColumns(0));
+				.add(new HeavyHittersOperator(0, conf, (float)0.1).setGroupByColumns(0));
 
         return tweetsHeavyHitterKeywords;
         // -------------------------------------------------------------------------------------
