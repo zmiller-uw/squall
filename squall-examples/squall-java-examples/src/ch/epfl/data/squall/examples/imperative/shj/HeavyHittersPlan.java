@@ -42,14 +42,14 @@ public class HeavyHittersPlan extends QueryPlan {
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
 
         // -------------------------------------------------------------------------------------
-        Component orderClerks = new DataSourceComponent("orders", conf)
-                .add(new ProjectOperator(6));
+        Component tweets = new DataSourceComponent("tweets", conf)
+                .add(new ProjectOperator(1));
 
      // -------------------------------------------------------------------------------------
-        Component orderClerksHeavyHitters = orderClerks
+        Component tweetsHeavyHitterKeywords = tweets
 				.add(new HeavyHittersOperator(0, conf).setGroupByColumns(0));
 
-        return orderClerksHeavyHitters;
+        return tweetsHeavyHitterKeywords;
         // -------------------------------------------------------------------------------------
     }
 }
