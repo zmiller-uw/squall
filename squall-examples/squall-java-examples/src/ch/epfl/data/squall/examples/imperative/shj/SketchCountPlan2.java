@@ -26,15 +26,15 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
-import ch.epfl.data.squall.operators.ApproximateCountSketchOperator;
+import ch.epfl.data.squall.operators.ApproximateCountSketchOperator2;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
 
-public class SketchCountPlan extends QueryPlan {
+public class SketchCountPlan2 extends QueryPlan {
 
-    public SketchCountPlan(String dataPath, String extension, Map conf) {
+    public SketchCountPlan2(String dataPath, String extension, Map conf) {
         super(dataPath, extension, conf);
     }
 
@@ -48,7 +48,7 @@ public class SketchCountPlan extends QueryPlan {
         // -------------------------------------------------------------------------------------
         Component custOrders = orders
 //				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
-				.add(new ApproximateCountSketchOperator(0, conf).setGroupByColumns(0));
+				.add(new ApproximateCountSketchOperator2(0, conf).setGroupByColumns(0));
 
         return custOrders;
         // -------------------------------------------------------------------------------------

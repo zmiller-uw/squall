@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -40,10 +42,9 @@ import ch.epfl.data.squall.window_semantics.WindowSemanticsManager;
 
 import ch.epfl.data.squall.utilities.SketchCountMin;
 
-
-public class ApproximateCountSketchOperator extends OneToOneOperator implements AggregateOperator<Long> {
+public class ApproximateCountSketchOperator2 extends OneToOneOperator implements AggregateOperator<Long> {
     private static final long serialVersionUID = 1L;
-    private static Logger LOG = Logger.getLogger(ApproximateCountSketchOperator.class);
+    private static Logger LOG = Logger.getLogger(ApproximateCountSketchOperator2.class);
 
     // the GroupBy type
     private static final int GB_UNSET = -1;
@@ -66,15 +67,16 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     private int _slideRangeSecs = -1;
 
     private int _field;
+    private HashSet<String> _unique_keys;
 
     private SketchCountMin _scm;
 
-    public ApproximateCountSketchOperator(int field, Map map) {
+    public ApproximateCountSketchOperator2(int field, Map map) {
 	_field = field;
+	_unique_keys = new HashSet<String>();
 	_map = map;
 	_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
 	_scm = new SketchCountMin(997, 3);
-
 	System.out.println("ZKM: _map is " + map);
     }
 
@@ -97,7 +99,6 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     // is the same as DIP_GLOBAL_ADD_DELIMITER
     @Override
     public List<String> getContent() {
-	System.out.println("ZKM: getContent()");
 	final String str = _storage.getContent();
 	System.out.println("ZKM: getContent str = " + str);
 	return str == null ? null : Arrays.asList(str.split("\\r?\\n"));
@@ -143,7 +144,19 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 
     @Override
     public BasicStore getStorage() {
-	System.out.println("ZKM: getStorage()");
+
+
+	Iterator<String> tuples = _unique_keys.iterator();
+	String tuple;
+	List<String> faketuple;
+
+	while (tuples.hasNext()) {
+	   tuple = tuples.next();
+//	   System.out.println("ZKM: _unique_keys tuple: " + tuple);
+	   faketuple = Arrays.asList(tuple);
+	   _storage.update(faketuple, tuple);
+	}
+
 	return _storage;
     }
 
@@ -170,7 +183,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     // from Operator
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
-	System.out.println("ZKM: processOne(" + tuple + ")");
+//	System.out.println("ZKM: processOne(" + tuple + ")");
 	_numTuplesProcessed++;
 	if (_distinct != null) {
 	    tuple = _distinct.processOne(tuple, lineageTimestamp);
@@ -185,51 +198,61 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
 		    _map);
 
-	final Long value = _storage.update(tuple, tupleHash);
-	final String strValue = _wrapper.toString(value);
+//	final Long value = _storage.update(tuple, tupleHash);
+//	final String strValue = _wrapper.toString(value);
+	final String strValue = "1";
 
 	// propagate further the affected tupleHash-tupleValue pair
 	final List<String> affectedTuple = new ArrayList<String>();
 	affectedTuple.add(tupleHash);
 	affectedTuple.add(strValue);
 
-	System.out.println("ZKM: affectedTuple == " + affectedTuple);
+	long k = (new Long(tupleHash)).longValue();
+	long v = _scm.UpdateSketch(k, 1);
+//	System.out.println("ZKM: " + k + " has count " + v + ", adding \"" + tupleHash + "\" to _unique_keys");
+	_unique_keys.add(tupleHash);
+
+//	System.out.println("ZKM: affectedTuple == " + affectedTuple);
 	return affectedTuple;
     }
 
     // actual operator implementation
     @Override
     public Long runAggregateFunction(Long value, List<String> tuple) {
-	System.out.println("ZKM: runAggregateFunction(" + value + " " + tuple + ")");
+	//System.out.println("ZKM: **NOOP** runAggregateFunction(" + value + " " + tuple + ")");
+
         // I need list item _field from tuple.
         String tmp_bs = tuple.get(_field);
-        long hash = tmp_bs.hashCode();
-
-	final Long v = _scm.UpdateSketch(hash, 1);
+//	long hash = tmp_bs.hashCode();
+	long hash = (new Long(tmp_bs).longValue());
+	final Long v = _scm.UpdateSketch(hash, 0);
+//	System.out.println("ZKM: runAggregateFunction(" + hash  + ") == " + v);
 	return v;
+
+//	return 0L;
     }
 
     @Override
     public Long runAggregateFunction(Long value1, Long value2) {
-	System.out.println("ZKM: runAggregateFunction(" + value1 + " " + value2 + ")");
+//	System.out.println("ZKM: runAggregateFunction(" + value1 + " " + value2 + ")");
 	return value1 + value2;
     }
 
     @Override
-    public ApproximateCountSketchOperator setDistinct(DistinctOperator distinct) {
+    public ApproximateCountSketchOperator2 setDistinct(DistinctOperator distinct) {
 	_distinct = distinct;
 	return this;
     }
 
     @Override
-    public ApproximateCountSketchOperator setGroupByColumns(int... hashIndexes) {
+    public ApproximateCountSketchOperator2 setGroupByColumns(int... hashIndexes) {
 	return setGroupByColumns(Arrays
 		.asList(ArrayUtils.toObject(hashIndexes)));
     }
 
     // from AgregateOperator
     @Override
-    public ApproximateCountSketchOperator setGroupByColumns(List<Integer> groupByColumns) {
+    public ApproximateCountSketchOperator2 setGroupByColumns(List<Integer> groupByColumns) {
 	if (!alreadySetOther(GB_COLUMNS)) {
 	    _groupByType = GB_COLUMNS;
 	    _groupByColumns = groupByColumns;
@@ -240,7 +263,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     }
 
     @Override
-    public ApproximateCountSketchOperator setGroupByProjection(
+    public ApproximateCountSketchOperator2 setGroupByProjection(
 	    ProjectOperator groupByProjection) {
 	if (!alreadySetOther(GB_PROJECTION)) {
 	    _groupByType = GB_PROJECTION;
@@ -254,7 +277,7 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
     @Override
     public String toString() {
 	final StringBuilder sb = new StringBuilder();
-	sb.append("ApproximateCountSketchOperator ");
+	sb.append("ApproximateCountSketchOperator2 ");
 	if (_groupByColumns.isEmpty() && _groupByProjection == null)
 	    sb.append("\n  No groupBy!");
 	else if (!_groupByColumns.isEmpty())
@@ -294,5 +317,4 @@ public class ApproximateCountSketchOperator extends OneToOneOperator implements 
 	res[1] = _slideRangeSecs;
 	return res;
     }
-
 }
