@@ -26,6 +26,7 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.HeavyHittersOperator;
+import ch.epfl.data.squall.operators.TwitterParserOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
@@ -52,7 +53,8 @@ public class HeavyHittersPlan extends QueryPlan {
 
      	// -------------------------------------------------------------------------------------
         Component tweetsHeavyHitterKeywords = tweets
-				.add(new HeavyHittersOperator(0, conf, samplePercent).setGroupByColumns(0));
+				.add(new TwitterParserOperator(0, conf).setGroupByColumns(0))
+				.add(new HeavyHittersOperator(0, conf, samplePercent));
 
         return tweetsHeavyHitterKeywords;
         // -------------------------------------------------------------------------------------
