@@ -31,7 +31,6 @@ import ch.epfl.data.squall.operators.DistinctOperator;
 import ch.epfl.data.squall.operators.Operator;
 import ch.epfl.data.squall.operators.PrintOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
-import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.operators.SampleOperator;
 import ch.epfl.data.squall.operators.SelectOperator;
 import ch.epfl.data.squall.operators.StoreOperator;
@@ -118,11 +117,6 @@ public class VECollectVisitor implements OperatorVisitor {
     @Override
     public void visit(ProjectOperator projection) {
 	// ignored because of topDown - makes no harm
-    }
-
-    @Override
-    public void visit(SketchOperator sketchOperator) {
-		System.out.println("ZKM: visited sketchOperator");
     }
 
     @Override

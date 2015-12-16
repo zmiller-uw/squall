@@ -40,6 +40,8 @@ import ch.epfl.data.squall.utilities.MyUtilities;
 import ch.epfl.data.squall.visitors.OperatorVisitor;
 import ch.epfl.data.squall.window_semantics.WindowSemanticsManager;
 
+import ch.epfl.data.squall.utilities.SketchCountMin;
+
 public class ApproximateCountSketchOperator2 extends OneToOneOperator implements AggregateOperator<Long> {
     private static final long serialVersionUID = 1L;
     private static Logger LOG = Logger.getLogger(ApproximateCountSketchOperator2.class);
@@ -67,11 +69,14 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
     private int _field;
     private HashSet<String> _unique_keys;
 
+    private SketchCountMin _scm;
+
     public ApproximateCountSketchOperator2(int field, Map map) {
 	_field = field;
 	_unique_keys = new HashSet<String>();
 	_map = map;
 	_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
+	_scm = new SketchCountMin(997, 3);
 	System.out.println("ZKM: _map is " + map);
     }
 
@@ -203,7 +208,7 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
 	affectedTuple.add(strValue);
 
 	long k = (new Long(tupleHash)).longValue();
-	long v = UpdateSketch(k, 1);
+	long v = _scm.UpdateSketch(k, 1);
 //	System.out.println("ZKM: " + k + " has count " + v + ", adding \"" + tupleHash + "\" to _unique_keys");
 	_unique_keys.add(tupleHash);
 
@@ -220,7 +225,7 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
         String tmp_bs = tuple.get(_field);
 //	long hash = tmp_bs.hashCode();
 	long hash = (new Long(tmp_bs).longValue());
-	final Long v = UpdateSketch(hash, 0);
+	final Long v = _scm.UpdateSketch(hash, 0);
 //	System.out.println("ZKM: runAggregateFunction(" + hash  + ") == " + v);
 	return v;
 
@@ -312,101 +317,4 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
 	res[1] = _slideRangeSecs;
 	return res;
     }
-
-    public static int safeLongToInt(long l) {
-        if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
-		throw new IllegalArgumentException
-			(l + " cannot be cast to int without changing its value.");
-	}
-	int zz = (int) l;
-	if(zz > 0) {
-		return zz;
-	} else {
-		return -zz;
-	}
-    }
-
-    ////////////////////////////////
-    // Count-Min.
-    ////////////////////////////////
-    //
-    // These should of course all be initialized in the constructor, not
-    // hard-coded.  Prime numbers should be generated based on a seed.
-    // Also, the dimension needs to be variable (_y) and not "3" as it is
-    // currently implemented.
-
-    public int _x = 997;
-    public int _y = 3;
-
-    public long[] _P1 = {5915587277L, 1500450271L, 3267000013L};
-    public long[] _P2 = {5754853343L, 4093082899L, 9576890767L};
-    public long[] _P3 = {3628273133L, 2860486313L, 5463458053L};
-    public long[] _P4 = {13L,         17L,         19L        };
-
-    // Actual sketch grid
-    public long[][] _sketch = new long[_x][_y];
-
-    public boolean AddToSketch(long k) {
-        System.out.println("ADD SKETCH FOR " + k);
-
-        for (int y = 0; y < _y; y++) {
-            int x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
-
-            System.out.println("C[" + x + "][" + y + "] ... ");
-            System.out.println("C[" + x + "][" + y + "] was " + _sketch[x][y]);
-            _sketch[x][y]++;
-            System.out.println("C[" + x + "][" + y + "] now " + _sketch[x][y]);
-        }
-		return true;
-    }
-
-
-    public long GetSketchMin(long k) {
-        System.out.println("GET SKETCH FOR " + k);
-
-        int y = 0;
-        int x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
-        long v = _sketch[x][y];
-
-        System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
-
-        for (y = 1; y < _y; y++) {
-            x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
-            System.out.println("C[" + x + "][" + y + "] == " + _sketch[x][y]);
-            if (_sketch[x][y] < v) {
-                v = _sketch[x][y];
-            }
-        }
-        return v;
-    }
-
-
-    public long UpdateSketch(long k, int delta) {
-
-        int y = 0;
-        int x = 0;
-        long min = -1;
-
-	// for each hash function
-        for (y = 0; y < _y; y++) {
-
-	    // find which column to update
-            x = safeLongToInt(((k * _P1[y] + _P2[y]) * _P3[y] + _P4[y]) % _x);
-
-	    // keep the previous value (just for printing) and update
-	    long prev = _sketch[x][y];
-            _sketch[x][y] = prev + delta;
-
-	    // debug information
-            //System.out.println("C[" + x + "][" + y + "] was " + prev + " now " + _sketch[x][y]);
-
-	    // is the new value the minimum so far?
-            if ((min == -1) || (_sketch[x][y] < min)) {
-                min = _sketch[x][y];
-            }
-        }
-        System.out.println("UPDATE SKETCH FOR " + k + " DELTA " + delta + " RESULT " + min);
-        return min;
-    }
-
 }
