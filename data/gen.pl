@@ -35,7 +35,7 @@ sub ranval {
             print "E\n";
           } else {
             $p = rand(21);
-            print (chr(66 + $p));
+            print (chr(70 + $p));
             print "\n";
           }
         }
