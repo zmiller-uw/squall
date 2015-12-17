@@ -19,26 +19,28 @@ sub ranval {
 
   $p = rand(10);
 
-  if ($p < 8) {
+  if ($p < 2) {
     print "A\n";
+  } else {
+    if ($p < 4) {
+      print "B\n";
+    } else {
+      if ($p < 6) {
+        print "C\n";
+      } else {
+        if ($p < 7) {
+          print "D\n";
+        } else {
+          if ($p < 8) {
+            print "E\n";
+          } else {
+            $p = rand(21);
+            print (chr(66 + $p));
+            print "\n";
+          }
+        }
+      }
+    }
   }
-  if ($p < 7) {
-    print "B\n";
-  }
-  if ($p < 5) {
-    print "C\n";
-  }
-  if ($p < 3) {
-    print "D\n";
-  }
-  if ($p < 1) {
-    print "E\n";
-  }
-
-  $p = rand(21);
-  print (chr(66 + $p));
-
-  print "\n";
-
 }
 
