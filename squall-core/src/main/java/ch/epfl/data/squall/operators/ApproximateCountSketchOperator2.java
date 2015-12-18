@@ -207,7 +207,8 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
 	affectedTuple.add(tupleHash);
 	affectedTuple.add(strValue);
 
-	long k = (new Long(tupleHash)).longValue();
+//	long k = (new Long(tupleHash)).longValue();
+	long k = tupleHash.hashCode();
 	long v = _scm.UpdateSketch(k, 1);
 //	System.out.println("ZKM: " + k + " has count " + v + ", adding \"" + tupleHash + "\" to _unique_keys");
 	_unique_keys.add(tupleHash);
@@ -221,15 +222,18 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
     public Long runAggregateFunction(Long value, List<String> tuple) {
 	//System.out.println("ZKM: **NOOP** runAggregateFunction(" + value + " " + tuple + ")");
 
-        // I need list item _field from tuple.
-        String tmp_bs = tuple.get(_field);
-//	long hash = tmp_bs.hashCode();
-	long hash = (new Long(tmp_bs).longValue());
+	String tupleHash;
+	if (_groupByType == GB_PROJECTION)
+	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
+		    _groupByProjection.getExpressions(), _map);
+	else
+	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,
+		    _map);
+
+	long hash = tupleHash.hashCode();
 	final Long v = _scm.UpdateSketch(hash, 0);
 //	System.out.println("ZKM: runAggregateFunction(" + hash  + ") == " + v);
 	return v;
-
-//	return 0L;
     }
 
     @Override
