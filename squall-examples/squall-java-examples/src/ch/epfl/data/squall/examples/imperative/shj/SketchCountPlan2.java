@@ -41,14 +41,25 @@ public class SketchCountPlan2 extends QueryPlan {
     @Override
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
 
+	int numHashes = 5;
+	if(conf.containsKey("NUM_HASHES")) {
+	    numHashes = Integer.parseInt(conf.get("NUM_HASHES").toString());
+	}
+
+	int numBuckets = 997;
+	if(conf.containsKey("NUM_BUCKETS")) {
+	    numBuckets = Integer.parseInt(conf.get("NUM_BUCKETS").toString());
+	}
+
+
         // -------------------------------------------------------------------------------------
-        Component orders = new DataSourceComponent("orders", conf)
-                .add(new ProjectOperator(1));
+        Component orders = new DataSourceComponent("skewed", conf);
+//                .add(new ProjectOperator(1));
 
         // -------------------------------------------------------------------------------------
         Component custOrders = orders
-//				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
-				.add(new ApproximateCountSketchOperator2(0, 997, 5, conf).setGroupByColumns(0));
+				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
+//				.add(new ApproximateCountSketchOperator2(0, numBuckets, numHashes, conf).setGroupByColumns(0));
 
         return custOrders;
         // -------------------------------------------------------------------------------------
