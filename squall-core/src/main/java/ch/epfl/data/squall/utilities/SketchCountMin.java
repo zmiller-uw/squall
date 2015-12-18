@@ -110,14 +110,14 @@ public class SketchCountMin implements Serializable {
             _sketch[x][y] = prev + delta;
 
 	    // debug information
-            System.out.println("C[" + x + "][" + y + "] was " + prev + " now " + _sketch[x][y]);
+//	    System.out.println("C[" + x + "][" + y + "] was " + prev + " now " + _sketch[x][y]);
 
 	    // is the new value the minimum so far?
             if ((min == -1) || (_sketch[x][y] < min)) {
                 min = _sketch[x][y];
             }
         }
-        System.out.println("UPDATE SKETCH FOR " + k + " DELTA " + delta + " RESULT " + min);
+//        System.out.println("UPDATE SKETCH FOR " + k + " DELTA " + delta + " RESULT " + min);
         return min;
     }
 

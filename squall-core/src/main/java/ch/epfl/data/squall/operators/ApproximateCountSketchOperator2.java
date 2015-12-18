@@ -185,6 +185,10 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
 //	System.out.println("ZKM: processOne(" + tuple + ")");
 	_numTuplesProcessed++;
+	if(_numTuplesProcessed % 1000 == 0) {
+	    System.out.println("ZKM: processed: " + _numTuplesProcessed);
+	}
+
 	if (_distinct != null) {
 	    tuple = _distinct.processOne(tuple, lineageTimestamp);
 	    if (tuple == null)
