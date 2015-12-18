@@ -71,12 +71,12 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
 
     private SketchCountMin _scm;
 
-    public ApproximateCountSketchOperator2(int field, Map map) {
+    public ApproximateCountSketchOperator2(int field, int x, int y, Map map) {
 	_field = field;
 	_unique_keys = new HashSet<String>();
 	_map = map;
 	_storage = new AggregationStorage<Long>(this, _wrapper, _map, true);
-	_scm = new SketchCountMin(997, 3);
+	_scm = new SketchCountMin(x, y);
 	System.out.println("ZKM: _map is " + map);
     }
 

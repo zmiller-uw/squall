@@ -48,7 +48,7 @@ public class SketchCountPlan2 extends QueryPlan {
         // -------------------------------------------------------------------------------------
         Component custOrders = orders
 //				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
-				.add(new ApproximateCountSketchOperator2(0, conf).setGroupByColumns(0));
+				.add(new ApproximateCountSketchOperator2(0, 997, 5, conf).setGroupByColumns(0));
 
         return custOrders;
         // -------------------------------------------------------------------------------------
