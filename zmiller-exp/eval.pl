@@ -25,7 +25,7 @@ while ($l = <>) {
   }
 }
 
-print "of $COUNT records:\n";
+print "of $COUNT groups ($TOTAL records):\n";
 printf("%s were overestimates (%0.2f)%%\n", $DIFFERS, 100.0 * ($DIFFERS / $COUNT));
 printf("total error was %i (%0.2f)%%\n", $ERROR, 100.0 * ($ERROR/$TOTAL));
 printf("average error was %f\n", ($ERROR / $COUNT));
