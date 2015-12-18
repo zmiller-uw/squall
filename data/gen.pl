@@ -17,30 +17,26 @@ for ($i = 0; $i < $NUM_ENTRIES; $i++) {
 
 sub ranval {
 
-  $p = rand(10);
+  for($j = 0; $j < 5; $j++) {
 
-  if ($p < 2) {
-    print "A\n";
-  } else {
-    if ($p < 4) {
-      print "B\n";
+    $p = rand(10);
+
+    if ($p < 3) {
+      print "A";
     } else {
       if ($p < 6) {
-        print "C\n";
+        print "B";
       } else {
-        if ($p < 7) {
-          print "D\n";
+        if ($p < 9) {
+          print "C";
         } else {
-          if ($p < 8) {
-            print "E\n";
-          } else {
-            $p = rand(21);
-            print (chr(70 + $p));
-            print "\n";
-          }
+          $p = rand(23);
+          print (chr(68 + $p));
         }
       }
     }
   }
+
+  print "\n";
 }
 
