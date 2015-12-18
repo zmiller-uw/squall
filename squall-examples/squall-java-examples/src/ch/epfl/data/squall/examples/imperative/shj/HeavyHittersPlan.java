@@ -28,7 +28,6 @@ import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.HeavyHittersOperator;
 import ch.epfl.data.squall.operators.TwitterParserOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
-import ch.epfl.data.squall.operators.SketchOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
