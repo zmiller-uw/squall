@@ -26,7 +26,6 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
-import ch.epfl.data.squall.operators.ApproximateCountSamplingOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.operators.SampleOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
@@ -51,11 +50,9 @@ public class HyracksPlanCount extends QueryPlan {
 
         // -------------------------------------------------------------------------------------
         Component custOrders = new EquiJoinComponent(customer, 0, orders, 0)
-				//.add(new AggregateCountOperator(conf).setGroupByColumns(1));
-				.add(new SampleOperator(0.1))
-				.add(new ApproximateCountSamplingOperator(conf, 15000).setGroupByColumns(1));
+		 		.add(new AggregateCountOperator(conf).setGroupByColumns(1));
 
-        return custOrders;
+		return custOrders;
         // -------------------------------------------------------------------------------------
     }
 }

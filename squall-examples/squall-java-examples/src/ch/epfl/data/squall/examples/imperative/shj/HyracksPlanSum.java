@@ -56,16 +56,11 @@ public class HyracksPlanSum extends QueryPlan {
                 .add(new ProjectOperator(1));
 
         // -------------------------------------------------------------------------------------
-        // final AggregateOperator agg = new AggregateSumOperator(
-		//									new ColumnReference(_doubleConv, 1), conf)
-		//									.setGroupByColumns(Arrays.asList(2));
-		
-		final AggregateOperator agg = new ApproximateSumSamplingOperator(
-											new ColumnReference(_doubleConv, 1), conf, 15000)
-											.setGroupByColumns(Arrays.asList(2));
+        final AggregateOperator agg = new AggregateSumOperator(
+										new ColumnReference(_doubleConv, 1), conf)
+										.setGroupByColumns(Arrays.asList(2));
 		
 		Component custOrders = new EquiJoinComponent(customer, 0, orders, 0)
-									.add(new SampleOperator(0.1))
 									.add(agg);
 		
 		return custOrders;
