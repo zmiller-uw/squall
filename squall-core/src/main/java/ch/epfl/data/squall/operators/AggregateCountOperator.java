@@ -157,6 +157,12 @@ public class AggregateCountOperator extends OneToOneOperator implements Aggregat
     @Override
     public List<String> processOne(List<String> tuple, long lineageTimestamp) {
 	_numTuplesProcessed++;
+		
+	if (_numTuplesProcessed%5000==0) {
+		System.out.println("\n" + "Number: " + _numTuplesProcessed + " | TimeMillis: " + System.currentTimeMillis());
+		System.out.println(printContent());
+	}
+	
 	if (_distinct != null) {
 	    tuple = _distinct.processOne(tuple, lineageTimestamp);
 	    if (tuple == null)
