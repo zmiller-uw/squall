@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cd apache-storm-0.9.5
+java -classpath lib/*:../squall-core/target/squall-0.2.0.jar ch.epfl.data.squall.main.Main ../test/squall_plan_runner/confs/local/1M_heavy_hitters_sample-1 > mrc.out 2> mrc.err &
+# tail -f zkm.out
+

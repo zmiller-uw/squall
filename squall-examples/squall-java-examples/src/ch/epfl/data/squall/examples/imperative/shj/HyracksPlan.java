@@ -26,7 +26,6 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
-import ch.epfl.data.squall.operators.ApproximateCountOperator;
 import ch.epfl.data.squall.operators.ProjectOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
