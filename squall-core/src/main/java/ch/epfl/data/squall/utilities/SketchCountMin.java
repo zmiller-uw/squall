@@ -75,16 +75,18 @@ public class SketchCountMin implements Serializable {
 
     // helper function for converting result computed hash value down to the x
     // index into the array
-    public static int safeLongToInt(long l) {
+    public int safeLongToInt(long l) {
         if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
 		throw new IllegalArgumentException
 			(l + " cannot be cast to int without changing its value.");
 	}
 	int zz = (int) l;
-	if(zz > 0) {
+	if(zz >= 0) {
 		return zz;
 	} else {
-		return -zz;
+		int rv = (_x+zz);
+//		System.out.println("ZKM: got " + zz + " returning " + rv);
+		return rv;
 	}
     }
 
@@ -121,4 +123,13 @@ public class SketchCountMin implements Serializable {
         return min;
     }
 
+    public void DumpSketch() {
+	for(int y = 0; y < _y; y++) {
+	    System.out.print("HASH " + y + " [ ");
+	    for(int x = 0; x < _x; x++) {
+		System.out.print(_sketch[x][y] + " ");
+	    }
+	    System.out.print("]\n");
+	}
+    }
 }

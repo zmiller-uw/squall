@@ -145,6 +145,8 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
     @Override
     public BasicStore getStorage() {
 
+	System.out.println("ZKM: DUMPING SKETCH");
+	_scm.DumpSketch();
 
 	Iterator<String> tuples = _unique_keys.iterator();
 	String tuple;
@@ -326,3 +328,4 @@ public class ApproximateCountSketchOperator2 extends OneToOneOperator implements
 	return res;
     }
 }
+
