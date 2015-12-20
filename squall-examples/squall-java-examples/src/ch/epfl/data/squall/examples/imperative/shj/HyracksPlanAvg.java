@@ -56,16 +56,11 @@ public class HyracksPlanAvg extends QueryPlan {
                 .add(new ProjectOperator(1));
 
         // -------------------------------------------------------------------------------------
-        // final AggregateOperator agg = new AggregateAvgOperator(
-	//				     new ColumnReference(_doubleConv, 1), conf)
-	//				     .setGroupByColumns(Arrays.asList(2));
-		
-	final AggregateOperator agg = new ApproximateAvgSamplingOperator(
-					     new ColumnReference(_doubleConv, 1), conf, 15000)
+        final AggregateOperator agg = new AggregateAvgOperator(
+					     new ColumnReference(_doubleConv, 1), conf)
 					     .setGroupByColumns(Arrays.asList(2));
 		
 	Component custOrders = new EquiJoinComponent(customer, 0, orders, 0)
-						.add(new SampleOperator(0.1))
 						.add(agg);
 		
 	return custOrders;

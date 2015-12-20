@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -60,7 +61,12 @@ public class ApproximateAvgSamplingOperator extends OneToOneOperator implements 
 
     private final Map _map;
 	private final int _popSize;
-
+	private Map<String, Object> _mapRunningCounts = new HashMap();
+	private Map<String, Object> _mapRunningSums = new HashMap();
+	private Map<String, Object> _mapRunningSqSums = new HashMap();
+	private Map<String, Object> _mapRunningStdDevs = new HashMap();
+	private Map<String, Object> _mapRunningMeans = new HashMap();
+	
     private boolean isWindowSemantics;
     private int _windowRangeSecs = -1;
     private int _slideRangeSecs = -1;
@@ -151,51 +157,91 @@ public class ApproximateAvgSamplingOperator extends OneToOneOperator implements 
     public boolean isBlocking() {
 	return true;
     }
+	
+	public double tStatLookup(double confidenceTail, long dof) {
+		return 1.96;
+	}
 
     @Override
     public String printContent() {
-		String storageContent = _storage.getContent();
-		System.out.println("StorageContent: ");
-		System.out.println(storageContent);
+		// String storageContent = _storage.getContent();
+		// System.out.println("StorageContent: ");
+		// System.out.println(storageContent);
 		
-		String lines[] = storageContent.split("\\r?\\n");
-		double currentValue = 0;
-		int currentCount = 0;
-		double pointEstimateAvg = 0, popLower = 0, popUpper = 0;
-		double pSample = 0, pLower = 0, pUpper = 0;
+		double currentSum = 0;
+		long currentCount = 0;
+		double currentStdDev = 0;
+		double pointEstimateAvg = 0;
+		double pSample = 0, avgLower = 0, avgUpper = 0;
 		double stdError = 0;
-		double zScore = 1.96;
 		String resultString = "Number of Tuples Processed: " + _numTuplesProcessed + "\n";
-		for (String line: lines) {
-			String fields[] = line.split(" = ");
-			String subfields[] = fields[1].split(":");
-			currentValue = Double.parseDouble(subfields[0]);
-			currentCount = Integer.parseInt(subfields[1]);
-			pointEstimateAvg = 1.0*currentValue/currentCount;
-			System.out.println("currentValue: " + currentValue + " | currentCount: " + currentCount + " | pointEstimateAvg: " + pointEstimateAvg);
+
+		// double tStat = 1.96;
+		double confidence = 0.95;
+		double tStat = tStatLookup(1-confidence, currentCount-1);
+				
+		for (String currentKey : _mapRunningSums.keySet()) {
+
+			currentSum = (double) _mapRunningSums.get(currentKey);
+			currentCount = (long) _mapRunningCounts.get(currentKey);
+			currentStdDev = (double) _mapRunningStdDevs.get(currentKey);
+			
+			pointEstimateAvg = 1.0*currentSum/currentCount;
+			System.out.print("Key: " + currentKey + " | Sum: " + currentSum);
+			System.out.println(" | Count: " + currentCount + " | pointEstimateAvg: " + pointEstimateAvg);
 			
 			pSample = 1.0*currentCount/_numTuplesProcessed;
-			resultString += fields[0];
+			resultString += currentKey;
 			resultString += " = " + pointEstimateAvg;	
 			
 			if (_numTuplesProcessed*pSample <= 10.0) {
 				resultString += " | Too early for Interval Estimate.\n";
 			}
 			else {
-				stdError = Math.sqrt(pSample*(1-pSample)/_numTuplesProcessed);
-				pLower = pSample - (zScore*stdError);
-				pUpper = pSample + (zScore*stdError);
-				popLower = (int)Math.round(pLower*_popSize);
-				popUpper = (int)Math.round(pUpper*_popSize);
-				// System.out.print(" | pSample: " + pSample + " | pLower: " + pLower + " | pUpper: " + pUpper);
-				resultString += " [ " + popLower + " , " + popUpper + " ] | 95% Confidence Interval Range = " + (popUpper - popLower);
+				double factor = (tStat*currentStdDev)/Math.sqrt(currentCount);
+				avgLower = pointEstimateAvg - factor;
+				avgUpper = pointEstimateAvg + factor;
+				resultString += " [ " + avgLower + " , " + avgUpper + " ] | 95% Confidence Interval Range = " + (avgUpper - avgLower) + "\n";
 			}
-			resultString += " | CV: " + currentValue + "\n";
-			
 		}
 		return resultString;
-		// return _storage.getContent();
+
 	}
+	
+	public void updateStatistics(String tupleHash, SumCount sumCount) {
+		
+		double newRunningSum = sumCount.getSum();
+		long newRunningCount = sumCount.getCount();
+		
+		long oldRunningCount = 0;
+		double oldRunningSum = 0;
+		double oldRunningSqSum = 0;
+		double oldRunningMean = 0;
+		double oldRunningStdDev = 0;
+		
+		if (newRunningCount > 1) {
+			oldRunningCount = (long) _mapRunningCounts.get(tupleHash);
+			oldRunningSum = (double) _mapRunningSums.get(tupleHash);
+			oldRunningSqSum = (double) _mapRunningSqSums.get(tupleHash);
+			oldRunningMean = (double) _mapRunningMeans.get(tupleHash);
+			oldRunningStdDev = (double) _mapRunningStdDevs.get(tupleHash);
+		}
+		
+		double newValue = newRunningSum - oldRunningSum;
+		double newRunningSqSum = oldRunningSqSum + (newValue*newValue);
+		double newRunningMean = newRunningSum/newRunningCount;
+		double newRunningStdDev = Math.sqrt((newRunningSqSum/newRunningCount) - (newRunningMean*newRunningMean));
+
+		_mapRunningSums.put(tupleHash, newRunningSum);
+		_mapRunningCounts.put(tupleHash, newRunningCount);			   
+		_mapRunningSqSums.put(tupleHash, newRunningSqSum);
+		_mapRunningMeans.put(tupleHash, newRunningMean);
+		_mapRunningStdDevs.put(tupleHash, newRunningStdDev);
+		
+		// System.out.println("Exiting updateStatistics ...");
+		
+	}
+		
 
     // from Operator
     @Override
@@ -212,6 +258,8 @@ public class ApproximateAvgSamplingOperator extends OneToOneOperator implements 
 	else
 	    tupleHash = MyUtilities.createHashString(tuple, _groupByColumns,  _map);
 	final SumCount sumCount = _storage.update(tuple, tupleHash);
+	// System.out.println("TupleHash: " + tupleHash + " | Tuple: " + tuple + " | LTS: " + lineageTimestamp); 
+	updateStatistics(tupleHash,sumCount);
 	final String strValue = _wrapper.toString(sumCount);
 
 	// propagate further the affected tupleHash-tupleValue pair
@@ -219,7 +267,7 @@ public class ApproximateAvgSamplingOperator extends OneToOneOperator implements 
 	affectedTuple.add(tupleHash);
 	affectedTuple.add(strValue);
 	
-	if (_numTuplesProcessed%100 ==0) {
+	if (_numTuplesProcessed%5000 ==0) {
 		System.out.println("TupleHash: " + tupleHash + " | Tuple: " + tuple + " | LTS: " + lineageTimestamp + " | StrValue: " + strValue); 
 		System.out.println("SumCount: " + sumCount); 
 		System.out.println("Number of Tuples Processed = " + _numTuplesProcessed);
@@ -346,35 +394,4 @@ public class ApproximateAvgSamplingOperator extends OneToOneOperator implements 
 
 }
 
-/*
-double std_dev(double a[], int n) {
-    if(n == 0)
-    	return 0.0;
-    int i = 0;
-    double meanSum = a[0];
-    double stdDevSum = 0.0;
-    for(i = 1; i < n; ++i) {
-        double stepSum = a[i] - meanSum;
-        double stepMean = ((i - 1) * stepSum) / i;
-        meanSum += stepMean;
-        stdDevSum += stepMean * stepSum;
-    }
-    // for poulation variance: return sqrt(stdDevSum / elements);
-    return sqrt(stdDevSum / (elements - 1));
-}
 
-double std_dev(double newValue) {
-    // assume n is maintained inside
-	// assume meanSum is maintained inside
-	// assume stdDevSum is maintained inside
-	
-	n++;
-	if(n == 1)	return 0.0;
-	double stepSum = newValue - meanSum;
-	double stepMean = ((n - 1) * stepSum) / n;
-	meanSum += stepMean;
-    stdDevSum += stepMean * stepSum;
-    return sqrt(stdDevSum / (n - 1));
-}
-
-*/

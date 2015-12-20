@@ -214,8 +214,8 @@ public class ApproximateCountSamplingOperator extends OneToOneOperator implement
 		// tupleHash: is one of the group by values in final result
 		// value and strValue: Reflect the update count of the key being updated
 	
-		if (_numTuplesProcessed%500 ==0) {
-			// System.out.println("NumProc = " + _numTuplesProcessed);
+		if (_numTuplesProcessed%5000 ==0) {
+			System.out.println("\n" + "Number: " + _numTuplesProcessed + " | TimeMillis: " + System.currentTimeMillis());
 			System.out.println(printContent());
 		}
     	
