@@ -26,8 +26,9 @@ import ch.epfl.data.squall.components.DataSourceComponent;
 import ch.epfl.data.squall.components.EquiJoinComponent;
 import ch.epfl.data.squall.expressions.ColumnReference;
 import ch.epfl.data.squall.operators.AggregateCountOperator;
-import ch.epfl.data.squall.operators.ApproximateCountSketchOperator;
+import ch.epfl.data.squall.operators.ApproximateCountSketchOperator2;
 import ch.epfl.data.squall.operators.ProjectOperator;
+import ch.epfl.data.squall.operators.TwitterParserOperator;
 import ch.epfl.data.squall.predicates.ComparisonPredicate;
 import ch.epfl.data.squall.query_plans.QueryPlan;
 import ch.epfl.data.squall.types.IntegerType;
@@ -41,17 +42,27 @@ public class SketchCountPlan extends QueryPlan {
     @Override
     public Component createQueryPlan(String dataPath, String extension, Map conf) {
 
-        // -------------------------------------------------------------------------------------
-        Component orders = new DataSourceComponent("orders", conf)
-                .add(new ProjectOperator(1));
+	int numHashes = 5;
+	if(conf.containsKey("NUM_HASHES")) {
+	    numHashes = Integer.parseInt(conf.get("NUM_HASHES").toString());
+	}
 
-        // -------------------------------------------------------------------------------------
-        Component custOrders = orders
-//				.add(new AggregateCountOperator(conf).setGroupByColumns(0));
-				.add(new ApproximateCountSketchOperator(0, conf).setGroupByColumns(0));
+	int numBuckets = 997;
+	if(conf.containsKey("NUM_BUCKETS")) {
+	    numBuckets = Integer.parseInt(conf.get("NUM_BUCKETS").toString());
+	}
 
-        return custOrders;
-        // -------------------------------------------------------------------------------------
+	// -------------------------------------------------------------------------------------
+	Component tweets = new DataSourceComponent("tweets", conf)
+		.add(new ProjectOperator(1));
+
+	// -------------------------------------------------------------------------------------
+	Component tweetCounts = tweets
+		.add(new TwitterParserOperator(0, conf).setGroupByColumns(0))
+//		.add(new AggregateCountOperator(conf).setGroupByColumns(0));
+		.add(new ApproximateCountSketchOperator2(0, numBuckets, numHashes, conf).setGroupByColumns(0));
+
+        return tweetCounts;
     }
 }
 
